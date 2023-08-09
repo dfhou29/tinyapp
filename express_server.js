@@ -85,6 +85,11 @@ app.post("/urls/:id", (req, res) => {
   res.redirect("/urls");
 })
 
+app.post("/logout", (req, res) => {
+  res.clearCookie('username');
+  res.redirect("/urls");
+})
+
 
 // app.get("/hello", (req, res) => {
 //   const templateVar = {greeting: 'Hello world!'};
