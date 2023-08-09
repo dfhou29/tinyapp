@@ -61,6 +61,11 @@ app.get("/urls/:id", (req, res) => {
 //   res.redirect(longURL);
 // });
 
+app.post("/login", (req, res) => {
+  res.cookie('username', req.body.username);
+  res.redirect("/urls");
+})
+
 app.post("/urls/:id/delete", (req, res) => {
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
