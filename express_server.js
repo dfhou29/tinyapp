@@ -51,18 +51,34 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   const user = req.body;
 
+  // if user didn't enter email or password
+  if (!user.email || !user.password) {
+    res.status(400);
+    return res.send("Please enter email and password!");
+  }
+
+  //if email does not exist in users
+  if (!findUserByEmail(user.email)) {
+    res.status(403);
+    return res.send("Email is not registered!");
+  }
+
   for (const userId in users) {
-    // check if email and password matches
+    // if email and password matches, log in and redirect to /urls
     if (users[userId].email === user.email && users[userId].password === user.password) {
       res.cookie('user_id', users[userId].id);
       return res.redirect("/urls");
     }
   }
+
+  // incorrect password
+  res.status(403);
+  res.send("Incorrect password. Please try again!");
 });
 
 app.post("/logout", (req, res) => {
   res.clearCookie('user_id');
-  res.redirect("/urls");
+  res.redirect("/login");
 });
 
 app.get("/register", (req, res) => {
@@ -73,7 +89,7 @@ app.post("/register", (req,res) => {
   const email = req.body.email;
   const password = req.body.password;
 
-  // if user didn't provide username and password
+  // if user didn't provide email and password
   if (!email || !password) {
     res.status(400);
     return res.send('Please provide email and password!');
@@ -148,14 +164,6 @@ app.post("/urls/:id", (req, res) => {
   urlDatabase[req.params.id] = req.body.longURL;
   res.redirect("/urls");
 });
-
-
-
-
-// app.get("/hello", (req, res) => {
-//   const templateVar = {greeting: 'Hello world!'};
-//   res.render('hello_world', templateVar)  ;
-// });
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);
