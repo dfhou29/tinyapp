@@ -11,6 +11,19 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const users = {
+  edj3fl: {
+    id: "edj3fl",
+    email: "1@gamil.com",
+    password: "123",
+  },
+  ekf94j: {
+    id: "ekf94j",
+    email: "2@yahoo.com",
+    password: "345",
+  },
+};
+
 // generate a random string with length of 6
 const generateRandomString = () => {
   return Math.random().toString(36).substring(2,8);
@@ -23,9 +36,15 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.post("/login", (req, res) => {
-  res.cookie('username', req.body.username);
-  console.log('cookie-username:', req.cookies['username']);
-  res.redirect("/urls");
+  const user = req.body;
+
+  for (const userId in users) {
+    // check if email and password matches
+    if (users[userId].email === user.email && users[userId].password === user.password) {
+      res.cookie('user_id', users[userId].id);
+      return res.redirect("/urls");
+    }
+  }
 });
 
 app.post("/logout", (req, res) => {
@@ -37,18 +56,46 @@ app.get("/register", (req, res) => {
   res.render('register');
 })
 
+app.post("/register", (req,res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+
+  // if user didn't provide username and password
+  if (!email || !password) {
+    return res.send('Please provide email and password!');
+  }
+
+  // if email is already registered
+  for (const userId in users) {
+    if (users[userId].email === email) {
+      return res.send("Email is already registered!");
+    }
+  }
+
+  // happy path: user provide email and password
+  const userId = generateRandomString();
+  users[userId] = {
+    id: userId,
+    email: email,
+    password: password,
+  };
+  console.log(users);
+  res.cookie('user_id', userId);
+  res.redirect("/urls");
+})
+
 app.get("/urls", (req, res) => {
 
   const templateVars = {
     urls: urlDatabase,
-    username: req.cookies['username']
+    user: users[req.cookies['user_id']],
   };
   res.render('urls_index', templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
   const templateVars = {
-    username: req.cookies['username']
+    user: users[req.cookies['user_id']],
   };
   res.render('urls_new', templateVars);
 });
@@ -58,7 +105,7 @@ app.get("/urls/:id", (req, res) => {
   const templateVars = {
     id: req.params.id,
     longURL: urlDatabase[req.params.id],
-    username: req.cookies['username']
+    user: users[req.cookies['user_id']],
   };
   res.render('urls_show', templateVars);
 });
