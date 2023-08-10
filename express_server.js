@@ -29,6 +29,15 @@ const generateRandomString = () => {
   return Math.random().toString(36).substring(2,8);
 };
 
+const findUserByEmail = (email) => {
+  for (const userId in users) {
+    if (users[userId].email === email) {
+      return users[userId];
+    }
+  }
+  return null;
+}
+
 app.set('view engine', 'ejs');
 
 app.use(morgan('dev'));
@@ -48,7 +57,7 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie('user_id');
   res.redirect("/urls");
 });
 
@@ -62,14 +71,14 @@ app.post("/register", (req,res) => {
 
   // if user didn't provide username and password
   if (!email || !password) {
+    res.status(400);
     return res.send('Please provide email and password!');
   }
 
   // if email is already registered
-  for (const userId in users) {
-    if (users[userId].email === email) {
-      return res.send("Email is already registered!");
-    }
+  if (findUserByEmail(email)) {
+    res.status(400);
+    return res.send('Email is already registered!');
   }
 
   // happy path: user provide email and password
