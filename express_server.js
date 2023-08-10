@@ -36,7 +36,7 @@ const findUserByEmail = (email) => {
     }
   }
   return null;
-}
+};
 
 app.set('view engine', 'ejs');
 
@@ -45,8 +45,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.get("/login", (req, res) => {
+  // redirect to /urls if user already logged in
+  if (req.cookies["user_id"]) {
+    return res.redirect("/urls");
+  }
   res.render("login");
-})
+});
 
 app.post("/login", (req, res) => {
   const user = req.body;
@@ -82,8 +86,13 @@ app.post("/logout", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
+  // redirect to /urls if user already logged in
+  if (req.cookies["user_id"]) {
+    return res.redirect("/urls");
+  }
+
   res.render('register');
-})
+});
 
 app.post("/register", (req,res) => {
   const email = req.body.email;
@@ -111,7 +120,7 @@ app.post("/register", (req,res) => {
   console.log(users);
   res.cookie('user_id', userId);
   res.redirect("/urls");
-})
+});
 
 app.get("/urls", (req, res) => {
 
@@ -123,6 +132,10 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
+  if (!req.cookies['user_id']) {
+    return res.redirect("/login");
+  }
+
   const templateVars = {
     user: users[req.cookies['user_id']],
   };
@@ -131,21 +144,38 @@ app.get("/urls/new", (req, res) => {
 
 
 app.get("/urls/:id", (req, res) => {
+
+  const id = req.params.id;
+
   const templateVars = {
-    id: req.params.id,
+    id: id,
     longURL: urlDatabase[req.params.id],
     user: users[req.cookies['user_id']],
   };
-  res.render('urls_show', templateVars);
+  return res.render('urls_show', templateVars);
+
 });
 
-// app.get("/u/:id", (req, res) => {
-//   const longURL = urlDatabase[req.params.id];
-//   res.redirect(longURL);
-// });
+app.get("/u/:id", (req, res) => {
+  const id = req.params.id;
+  for (const urlKey in urlDatabase) {
+    if (urlKey === id) {
+      const longURL = urlDatabase[id];
+      return res.redirect(longURL);
+    }
+  }
+
+  // show error message if user enter a non-exist url id
+  res.status(404);
+  res.send("shorten url not found.");
+});
 
 app.post("/urls", (req, res) => {
-  console.log(req.body);
+  // if user not logged in, user is not allowed to add shorten url to database
+  if (!req.cookies['user_id']) {
+    return res.send("Access denied. Please log in before adding new shorten url.");
+  }
+
   const shortURL = generateRandomString();
   const longURL = req.body.longURL;
 
