@@ -7,8 +7,14 @@ const PORT = 8080;
 const app = express();
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": {
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "aJ48lW",
+  },
+  "9sm5xK": {
+    longURL: "http://www.google.com",
+    userID: "aJ48lW",
+  }
 };
 
 const users = {
@@ -37,6 +43,20 @@ const findUserByEmail = (email) => {
   }
   return null;
 };
+
+const urlsForUser = (id) => {
+  const urls = {};
+  for (const urlKey in urlDatabase) {
+    if (urlDatabase[urlKey].userID === id) {
+      urls[urlKey] = {
+        longURL: urlDatabase[urlKey].longURL,
+        userID: urlDatabase[urlKey].userID,
+      }
+    }
+  }
+
+  return urls;
+}
 
 app.set('view engine', 'ejs');
 
@@ -123,9 +143,15 @@ app.post("/register", (req,res) => {
 });
 
 app.get("/urls", (req, res) => {
+  if (!req.cookies['user_id']) {
+    res.status(403);
+    return res.send("Please log in first!");
+  }
 
+  // filter url database entries to only show what logged user created
+  const filterUrls = urlsForUser(req.cookies['user_id']);
   const templateVars = {
-    urls: urlDatabase,
+    urls: filterUrls,
     user: users[req.cookies['user_id']],
   };
   res.render('urls_index', templateVars);
@@ -145,22 +171,37 @@ app.get("/urls/new", (req, res) => {
 
 app.get("/urls/:id", (req, res) => {
 
+  if (!req.cookies['user_id']) {
+    res.status(403);
+    return res.send("Please log in first!");
+  }
+
+  // url id
   const id = req.params.id;
 
-  const templateVars = {
-    id: id,
-    longURL: urlDatabase[req.params.id],
-    user: users[req.cookies['user_id']],
-  };
-  return res.render('urls_show', templateVars);
+  // filter url database entries to only show what logged user created
+  const filterUrls = urlsForUser(req.cookies['user_id']);
 
+  for (const urlId in filterUrls) {
+    if (urlId === id) {
+      const templateVars = {
+        id: id,
+        longURL: filterUrls[req.params.id].longURL,
+        user: users[req.cookies['user_id']],
+      };
+      return res.render('urls_show', templateVars);
+    }
+  }
+  console.log(filterUrls);
+  res.status(403);
+  res.send("Access denied. Please log in associated account to view this url.");
 });
 
 app.get("/u/:id", (req, res) => {
   const id = req.params.id;
   for (const urlKey in urlDatabase) {
     if (urlKey === id) {
-      const longURL = urlDatabase[id];
+      const longURL = urlDatabase[id].longURL;
       return res.redirect(longURL);
     }
   }
@@ -179,20 +220,81 @@ app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   const longURL = req.body.longURL;
 
-  urlDatabase[shortURL] = longURL;
+  urlDatabase[shortURL] = {
+    longURL: longURL,
+    userID: req.cookies['user_id'],
+  };
   console.log(urlDatabase);
   res.redirect(`/urls/${shortURL}`);
 });
 
 
 app.post("/urls/:id/delete", (req, res) => {
-  delete urlDatabase[req.params.id];
-  res.redirect("/urls");
+
+  // check if user is logged in
+  if (!req.cookies['user_id']) {
+    res.status(403);
+    return res.send("Please log in first!");
+  }
+
+  // url id
+  const id = req.params.id;
+
+  //check if id exist
+  for (const urlId in urlDatabase) {
+    if (id === urlId) { // id found in database
+
+      if (urlDatabase[urlId].userID === req.cookies['user_id']) { // user id match, perform delete
+
+        delete urlDatabase[req.params.id];
+        return res.redirect("/urls");
+
+      } else { // id found but user id not match, refuse update
+
+        res.status(403);
+        return res.send("Access denied. Please log in associated account to update this url");
+
+      }
+    }
+  }
+
+  res.status(404);
+  res.send("Please enter an valid shorten url");
+
 });
 
 app.post("/urls/:id", (req, res) => {
-  urlDatabase[req.params.id] = req.body.longURL;
-  res.redirect("/urls");
+  // check if user is logged in
+  if (!req.cookies['user_id']) {
+    res.status(403);
+    return res.send("Please log in first!");
+  }
+
+  // url id
+  const id = req.params.id;
+
+  //check if id exist
+  for (const urlId in urlDatabase) {
+    if (id === urlId) { // id found in database
+
+      if (urlDatabase[urlId].userID === req.cookies['user_id']) { // user id match, perform update
+
+        urlDatabase[id].longURL = req.body.longURL;
+        return res.redirect("/urls");
+
+      } else { // id found but user id not match, refuse update
+
+        res.status(403);
+        return res.send("Access denied. Please log in associated account to update this url");
+
+      }
+    }
+  }
+
+  // id not found in database
+  res.status(404);
+  res.send("Please enter an valid shorten url");
+
 });
 
 app.listen(PORT, () => {
