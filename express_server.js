@@ -14,7 +14,7 @@ const urlDatabase = {
 const users = {
   edj3fl: {
     id: "edj3fl",
-    email: "1@gamil.com",
+    email: "1@gmail.com",
     password: "123",
   },
   ekf94j: {
@@ -43,6 +43,10 @@ app.set('view engine', 'ejs');
 app.use(morgan('dev'));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+app.get("/login", (req, res) => {
+  res.render("login");
+})
 
 app.post("/login", (req, res) => {
   const user = req.body;

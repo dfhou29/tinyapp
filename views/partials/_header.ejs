@@ -22,12 +22,8 @@
                         <button type="submit" class="btn btn-primary">Logout</button>
                     </form>
                 <%} else { %>
-                    <form action="/login" method="post">
-                        <input type="email" name="email" placeholder="email"/>
-                        <input type="text" name="password" placeholder="password"/>
-                        <button type="submit" class="btn btn-primary">Login</button>
-                    </form>
-
+                    <button><a href="../login">Login</a></button>
+                    <button><a href="../register">Register</a></button>
                 <% } %>
             </div>
         </div>
