@@ -13,12 +13,7 @@ const urlDatabase = {
 
 // generate a random string with length of 6
 const generateRandomString = () => {
-  const alphabets = 'abcdefghijklmnopqrstuvwxyz';
-  let randomString = '';
-  for (let x = 0; x < 6; x++) {
-    randomString += alphabets[Math.floor(Math.random() * (25 + 1))];
-  }
-  return randomString;
+  return Math.random().toString(36).substring(2,8);
 };
 
 app.set('view engine', 'ejs');
@@ -32,6 +27,15 @@ app.post("/login", (req, res) => {
   console.log('cookie-username:', req.cookies['username']);
   res.redirect("/urls");
 });
+
+app.post("/logout", (req, res) => {
+  res.clearCookie('username');
+  res.redirect("/urls");
+});
+
+app.get("/register", (req, res) => {
+  res.render('register');
+})
 
 app.get("/urls", (req, res) => {
 
@@ -85,10 +89,7 @@ app.post("/urls/:id", (req, res) => {
   res.redirect("/urls");
 });
 
-app.post("/logout", (req, res) => {
-  res.clearCookie('username');
-  res.redirect("/urls");
-});
+
 
 
 // app.get("/hello", (req, res) => {
