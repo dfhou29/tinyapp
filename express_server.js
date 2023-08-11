@@ -185,6 +185,11 @@ app.get("/urls/:id", (req, res) => {
     req.session.uniqueVisit = {};
   }
 
+  // create cookie object to store all view activities (visitor and registered users)
+  if (!req.session.visitRecord) {
+    req.session.visitRecord = {};
+  }
+
   // filter url database entries to only show what logged user created
   const filterUrls = urlsForUser(req.session.user_id, urlDatabase);
 
@@ -196,6 +201,7 @@ app.get("/urls/:id", (req, res) => {
         user: users[req.session.user_id],
         visitCount: (req.session.visitCount[id] || 0), // if visitCount[id] is undefined, use 0
         uniqueVisit: (req.session.uniqueVisit[id] || 'no one yet.'),
+        visitRecord: (req.session.visitRecord[id] || ''),
       };
       return res.render('urls_show', templateVars);
     }
@@ -220,39 +226,47 @@ app.get("/u/:id", (req, res) => {
     req.session.uniqueVisit = {};
   }
 
+  // create cookie object to store all view activities (visitor and registered users)
+  if (!req.session.visitRecord) {
+    req.session.uniqueVisit = {};
+  }
+
   // check for matching shorten url in database
   for (const urlKey in urlDatabase) {
     if (urlKey === id) {
       const longURL = urlDatabase[id].longURL;
 
+      // for visitCount
       // visitCount[id]++ when user clicks on the shorten url link (refresh required)
       req.session.visitCount[id] = (req.session.visitCount[id] || 0) + 1;
 
-      if (req.session.uniqueVisit[id]) {  // check if uniqueVisit[id] is undefined
 
-        if (req.session.user_id) { // visitor is a register user
+      if (!req.session.uniqueVisit[id]) {
+        req.session.uniqueVisit[id] = [];
+      }
 
-          if (!req.session.uniqueVisit[id].includes(req.session.user_id)) { // check if the register user has visited before
-            req.session.uniqueVisit[id].push((req.session.user_id)); // add registered user to uniqueVisit[id]
-          }
+      // create cookie object to store all view activities (visitor and registered users)
+      if (!req.session.visitRecord[id]) {
+        req.session.visitRecord[id] = {};
+      }
 
-        } else { // visitor has not been registered
-            const visitorId = generateRandomString();
-            req.session.uniqueVisit[id].push(`Visitor: ${visitorId}`);
+      let visitorId = '';
+
+      if (req.session.user_id) { // visitor is a register user
+
+        if (!req.session.uniqueVisit[id].includes(req.session.user_id)) { // registered user hasn't visited before
+          req.session.uniqueVisit[id].push((req.session.user_id)); // add registered user to uniqueVisit[id]
+          req.session.visitRecord[id][new Date().toString()] = req.session.user_id;
+        } else {
+          req.session.visitRecord[id][new Date().toString()] = req.session.user_id;
         }
 
-      } else { // uniqueVisit[id] is undefined
-        req.session.uniqueVisit[id] = [];
-
-          if (!req.session.uniqueVisit[id].includes(req.session.user_id)) { // check if the register user has visited before
-            req.session.uniqueVisit[id].push((req.session.user_id)); // add registered user to uniqueVisit[id]
-          }
-
-          else {
-            const visitorId = generateRandomString();
-            req.session.uniqueVisit[id].push(`Visitor: ${visitorId}`);
-          }
+      } else { // visitor has not been registered
+          visitorId = generateRandomString();
+          req.session.uniqueVisit[id].push(`Visitor: ${visitorId}`);
+          req.session.visitRecord[id][new Date().toString()] = visitorId;
       }
+
 
       return res.redirect(longURL);
     }
