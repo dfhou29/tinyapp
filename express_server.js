@@ -130,7 +130,7 @@ app.post("/register", (req,res) => {
 
 app.post("/logout", (req, res) => {
 
-  req.session = null;
+  req.session.user_id = null;
   res.redirect("/login");
 });
 
@@ -180,6 +180,11 @@ app.get("/urls/:id", (req, res) => {
     req.session.visitCount = {};
   }
 
+  // create cookie object to store all unique visitor id
+  if (!req.session.uniqueVisit) {
+    req.session.uniqueVisit = {};
+  }
+
   // filter url database entries to only show what logged user created
   const filterUrls = urlsForUser(req.session.user_id, urlDatabase);
 
@@ -190,6 +195,7 @@ app.get("/urls/:id", (req, res) => {
         longURL: filterUrls[req.params.id].longURL,
         user: users[req.session.user_id],
         visitCount: (req.session.visitCount[id] || 0), // if visitCount[id] is undefined, use 0
+        uniqueVisit: (req.session.uniqueVisit[id] || 'no one yet.'),
       };
       return res.render('urls_show', templateVars);
     }
@@ -204,14 +210,50 @@ app.get("/u/:id", (req, res) => {
 
   const id = req.params.id;
 
+  // create cookie object to store shorten url view count
+  if (!req.session.visitCount) {
+    req.session.visitCount = {};
+  }
 
+  // create cookie object to store all unique visitor id
+  if (!req.session.uniqueVisit) {
+    req.session.uniqueVisit = {};
+  }
 
   // check for matching shorten url in database
   for (const urlKey in urlDatabase) {
     if (urlKey === id) {
       const longURL = urlDatabase[id].longURL;
+
       // visitCount[id]++ when user clicks on the shorten url link (refresh required)
       req.session.visitCount[id] = (req.session.visitCount[id] || 0) + 1;
+
+      if (req.session.uniqueVisit[id]) {  // check if uniqueVisit[id] is undefined
+
+        if (req.session.user_id) { // visitor is a register user
+
+          if (!req.session.uniqueVisit[id].includes(req.session.user_id)) { // check if the register user has visited before
+            req.session.uniqueVisit[id].push((req.session.user_id)); // add registered user to uniqueVisit[id]
+          }
+
+        } else { // visitor has not been registered
+            const visitorId = generateRandomString();
+            req.session.uniqueVisit[id].push(`Visitor: ${visitorId}`);
+        }
+
+      } else { // uniqueVisit[id] is undefined
+        req.session.uniqueVisit[id] = [];
+
+          if (!req.session.uniqueVisit[id].includes(req.session.user_id)) { // check if the register user has visited before
+            req.session.uniqueVisit[id].push((req.session.user_id)); // add registered user to uniqueVisit[id]
+          }
+
+          else {
+            const visitorId = generateRandomString();
+            req.session.uniqueVisit[id].push(`Visitor: ${visitorId}`);
+          }
+      }
+
       return res.redirect(longURL);
     }
   }
