@@ -74,6 +74,7 @@ app.post("/login", (req, res) => {
   for (const userId in users) {
     // if email and password matches, log in and redirect to /urls
     if (users[userId].email === user.email && bcrypt.compareSync(user.password, users[userId].password)) {
+      // use_ instead of camelcase for readability (intentional eslint error)
       req.session.user_id = users[userId].id;
       return res.redirect("/urls");
     }
@@ -120,11 +121,6 @@ app.post("/register", (req,res) => {
     email: email,
     password: password,
   };
-  console.log(users);
-
-  // redirect to /urls
-  // req.session.user_id = userId;
-  // res.redirect("/urls");
 
   // redirect to /login for user to test out new account
   res.redirect("/login");
@@ -141,8 +137,7 @@ app.get("/urls", (req, res) => {
 
   // if no session found
   if (!req.session.user_id) {
-    res.status(401);
-    return res.send("Please log in first!");
+    return res.redirect('/login');
   }
 
   // filter url database entries to only show what logged user created
@@ -192,9 +187,7 @@ app.get("/urls/:id", (req, res) => {
     }
   }
 
-  console.log(filterUrls);
-
-
+  // url belongs to another user
   res.status(401);
   res.send("Access denied. Please log in associated account to view this url.");
 });
@@ -231,7 +224,7 @@ app.post("/urls", (req, res) => {
     longURL: longURL,
     userID: req.session.user_id,
   };
-  console.log(urlDatabase);
+
   res.redirect(`/urls/${shortURL}`);
 });
 
@@ -264,6 +257,7 @@ app.post("/urls/:id/delete", (req, res) => {
     }
   }
 
+  // invalid url
   res.status(400);
   res.send("Please enter an valid shorten url");
 
