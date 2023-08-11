@@ -1,7 +1,8 @@
 const express = require('express');
 const morgan = require('morgan');
-const cookieSession = require("cookie-session");
-const bcrypt = require("bcryptjs");
+const cookieSession = require('cookie-session');
+const bcrypt = require('bcryptjs');
+const {generateRandomString, findUserByEmail, urlsForUser} = require('./helpers');
 
 const PORT = 8080;
 
@@ -31,36 +32,10 @@ const users = {
   },
 };
 
-// generate a random string with length of 6
-const generateRandomString = () => {
-  return Math.random().toString(36).substring(2,8);
-};
-
-const findUserByEmail = (email) => {
-  for (const userId in users) {
-    if (users[userId].email === email) {
-      return users[userId];
-    }
-  }
-  return null;
-};
-
-const urlsForUser = (id) => {
-  const urls = {};
-  for (const urlKey in urlDatabase) {
-    if (urlDatabase[urlKey].userID === id) {
-      urls[urlKey] = {
-        longURL: urlDatabase[urlKey].longURL,
-        userID: urlDatabase[urlKey].userID,
-      }
-    }
-  }
-
-  return urls;
-}
-
+// view engine
 app.set('view engine', 'ejs');
 
+// middlewares
 app.use(morgan('dev'));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieSession({
@@ -91,7 +66,7 @@ app.post("/login", (req, res) => {
   }
 
   //if email does not exist in users
-  if (!findUserByEmail(user.email)) {
+  if (!findUserByEmail(user.email, users)) {
     res.status(401);
     return res.send("Email is not registered!");
   }
@@ -108,7 +83,6 @@ app.post("/login", (req, res) => {
   res.status(401);
   res.send("Incorrect password. Please try again!");
 });
-
 
 app.get("/register", (req, res) => {
 
@@ -134,7 +108,7 @@ app.post("/register", (req,res) => {
   }
 
   // if email is already registered
-  if (findUserByEmail(email)) {
+  if (findUserByEmail(email, users)) {
     res.status(400);
     return res.send('Email is already registered!');
   }
@@ -172,7 +146,7 @@ app.get("/urls", (req, res) => {
   }
 
   // filter url database entries to only show what logged user created
-  const filterUrls = urlsForUser(req.session.user_id);
+  const filterUrls = urlsForUser(req.session.user_id, urlDatabase);
   const templateVars = {
     urls: filterUrls,
     user: users[req.session.user_id],
@@ -205,7 +179,7 @@ app.get("/urls/:id", (req, res) => {
   const id = req.params.id;
 
   // filter url database entries to only show what logged user created
-  const filterUrls = urlsForUser(req.session.user_id);
+  const filterUrls = urlsForUser(req.session.user_id, urlDatabase);
 
   for (const urlId in filterUrls) {
     if (urlId === id) {
