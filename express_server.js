@@ -175,6 +175,11 @@ app.get("/urls/:id", (req, res) => {
   // url id
   const id = req.params.id;
 
+  // create cookie object to store shorten url view count
+  if (!req.session.visitCount) {
+    req.session.visitCount = {};
+  }
+
   // filter url database entries to only show what logged user created
   const filterUrls = urlsForUser(req.session.user_id, urlDatabase);
 
@@ -184,6 +189,7 @@ app.get("/urls/:id", (req, res) => {
         id: id,
         longURL: filterUrls[req.params.id].longURL,
         user: users[req.session.user_id],
+        visitCount: (req.session.visitCount[id] || 0), // if visitCount[id] is undefined, use 0
       };
       return res.render('urls_show', templateVars);
     }
@@ -198,10 +204,14 @@ app.get("/u/:id", (req, res) => {
 
   const id = req.params.id;
 
+
+
   // check for matching shorten url in database
   for (const urlKey in urlDatabase) {
     if (urlKey === id) {
       const longURL = urlDatabase[id].longURL;
+      // visitCount[id]++ when user clicks on the shorten url link (refresh required)
+      req.session.visitCount[id] = (req.session.visitCount[id] || 0) + 1;
       return res.redirect(longURL);
     }
   }
