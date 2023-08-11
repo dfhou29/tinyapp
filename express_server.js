@@ -1,6 +1,7 @@
 const express = require('express');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
+const bcrypt = require("bcryptjs");
 
 const PORT = 8080;
 
@@ -21,12 +22,12 @@ const users = {
   edj3fl: {
     id: "edj3fl",
     email: "1@gmail.com",
-    password: "123",
+    password: "$2a$10$Iwp5pZfRnm4zXqVYpLR.6.xhQ0CDPWnDAXGgSy9tn5V7vK1Egbhkq",
   },
   ekf94j: {
     id: "ekf94j",
     email: "2@yahoo.com",
-    password: "345",
+    password: "$2a$10$Zk7zCiesyUEE4N3eaEDsn.DqU.eYTRPnrkTOQcnJGEdbFBm1n5I1i",
   },
 };
 
@@ -89,7 +90,7 @@ app.post("/login", (req, res) => {
 
   for (const userId in users) {
     // if email and password matches, log in and redirect to /urls
-    if (users[userId].email === user.email && users[userId].password === user.password) {
+    if (users[userId].email === user.email && bcrypt.compareSync(user.password, users[userId].password)) {
       res.cookie('user_id', users[userId].id);
       return res.redirect("/urls");
     }
@@ -115,8 +116,10 @@ app.get("/register", (req, res) => {
 });
 
 app.post("/register", (req,res) => {
+  // get email and password for req body
   const email = req.body.email;
-  const password = req.body.password;
+  // hashed password
+  const password = bcrypt.hashSync(req.body.password, 10);
 
   // if user didn't provide email and password
   if (!email || !password) {
@@ -138,8 +141,13 @@ app.post("/register", (req,res) => {
     password: password,
   };
   console.log(users);
-  res.cookie('user_id', userId);
-  res.redirect("/urls");
+
+  // redirect to /urls
+  // res.cookie('user_id', userId);
+  // res.redirect("/urls");
+
+  // redirect to /login for user to test out new account
+  res.redirect("/login");
 });
 
 app.get("/urls", (req, res) => {
