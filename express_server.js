@@ -1,4 +1,5 @@
 const express = require('express');
+const methodOverride = require('method-override');
 const morgan = require('morgan');
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
@@ -36,6 +37,7 @@ const users = {
 app.set('view engine', 'ejs');
 
 // middlewares
+app.use(methodOverride('_method'));
 app.use(morgan('dev'));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieSession({
@@ -228,7 +230,7 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortURL}`);
 });
 
-app.post("/urls/:id/delete", (req, res) => {
+app.delete("/urls/:id", (req, res) => {
 
   // check if user is logged in
   if (!req.session.user_id) {
@@ -263,7 +265,7 @@ app.post("/urls/:id/delete", (req, res) => {
 
 });
 
-app.post("/urls/:id", (req, res) => {
+app.put("/urls/:id", (req, res) => {
 
   // check if user is logged in
   if (!req.session.user_id) {
