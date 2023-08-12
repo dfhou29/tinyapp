@@ -116,14 +116,21 @@ app.post("/register", (req,res) => {
 
   // get email and password for req body
   const email = req.body.email;
-  // hash password
-  const password = bcrypt.hashSync(req.body.password, 10);
-
-  // if user didn't provide email and password
-  if (!email || !password) {
+  let password = req.body.password;
+  // if user didn't provide email or password
+  if (!email) {
     res.status(400);
-    return res.send('Please provide email and password!');
+    return res.send('Please provide a valid email!');
   }
+
+  if (!password) {
+    res.status(400);
+    return res.send('Please provide a non-empty password!');
+  }
+
+  // hash password
+  password = bcrypt.hashSync(req.body.password, 10);
+
 
   // if email is already registered
   if (findUserByEmail(email, users)) {
@@ -151,6 +158,14 @@ app.post("/logout", (req, res) => {
 });
 
 // content request
+
+app.get("/", (req, res) => {
+  if (req.session.user_id) {
+    return res.redirect("/urls");
+  } else {
+    return res.redirect("/login");
+  }
+});
 app.get("/urls", (req, res) => {
 
   // if no session found
