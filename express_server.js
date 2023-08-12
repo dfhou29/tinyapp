@@ -154,7 +154,8 @@ app.get("/urls", (req, res) => {
 
   // if no session found
   if (!req.session.user_id) {
-    return res.redirect('/login');
+    res.status(401);
+    return res.send('Please log in to view urls.');
   }
 
   // filter url database entries to only show what logged user created
