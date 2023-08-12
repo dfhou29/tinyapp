@@ -139,8 +139,9 @@ app.post("/register", (req,res) => {
     password: password,
   };
 
-  // redirect to /login for user to test out new account
-  res.redirect("/login");
+  // redirect to /urls, storing user_id in session
+  req.session.user_id = userId;
+  res.redirect("/urls");
 });
 
 app.post("/logout", (req, res) => {
