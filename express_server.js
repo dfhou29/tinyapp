@@ -33,6 +33,21 @@ const users = {
   },
 };
 
+// create cookie object to store shorten url view count
+const visitCount = {
+
+};
+
+// create cookie object to store all unique visitor id
+const uniqueVisit = {
+
+};
+
+// create cookie object to store all view activities (visitor and registered users)
+const visitRecord = {
+
+};
+
 // view engine
 app.set('view engine', 'ejs');
 
@@ -175,20 +190,6 @@ app.get("/urls/:id", (req, res) => {
   // url id
   const id = req.params.id;
 
-  // create cookie object to store shorten url view count
-  if (!req.session.visitCount) {
-    req.session.visitCount = {};
-  }
-
-  // create cookie object to store all unique visitor id
-  if (!req.session.uniqueVisit) {
-    req.session.uniqueVisit = {};
-  }
-
-  // create cookie object to store all view activities (visitor and registered users)
-  if (!req.session.visitRecord) {
-    req.session.visitRecord = {};
-  }
 
   // filter url database entries to only show what logged user created
   const filterUrls = urlsForUser(req.session.user_id, urlDatabase);
@@ -199,9 +200,9 @@ app.get("/urls/:id", (req, res) => {
         id: id,
         longURL: filterUrls[req.params.id].longURL,
         user: users[req.session.user_id],
-        visitCount: (req.session.visitCount[id] || 0), // if visitCount[id] is undefined, use 0
-        uniqueVisit: (req.session.uniqueVisit[id] || 'no one yet.'),
-        visitRecord: (req.session.visitRecord[id] || ''),
+        visitCount: (visitCount[id] || 0), // if visitCount[id] is undefined, use 0
+        uniqueVisit: (uniqueVisit[id] || 'no one yet.'),
+        visitRecord: (visitRecord[id] || ''),
       };
       return res.render('urls_show', templateVars);
     }
@@ -216,21 +217,6 @@ app.get("/u/:id", (req, res) => {
 
   const id = req.params.id;
 
-  // create cookie object to store shorten url view count
-  if (!req.session.visitCount) {
-    req.session.visitCount = {};
-  }
-
-  // create cookie object to store all unique visitor id
-  if (!req.session.uniqueVisit) {
-    req.session.uniqueVisit = {};
-  }
-
-  // create cookie object to store all view activities (visitor and registered users)
-  if (!req.session.visitRecord) {
-    req.session.uniqueVisit = {};
-  }
-
   // check for matching shorten url in database
   for (const urlKey in urlDatabase) {
     if (urlKey === id) {
@@ -238,33 +224,33 @@ app.get("/u/:id", (req, res) => {
 
       // for visitCount
       // visitCount[id]++ when user clicks on the shorten url link (refresh required)
-      req.session.visitCount[id] = (req.session.visitCount[id] || 0) + 1;
+      visitCount[id] = (visitCount[id] || 0) + 1;
 
 
-      if (!req.session.uniqueVisit[id]) {
-        req.session.uniqueVisit[id] = [];
+      if (!uniqueVisit[id]) {
+        uniqueVisit[id] = [];
       }
 
       // create cookie object to store all view activities (visitor and registered users)
-      if (!req.session.visitRecord[id]) {
-        req.session.visitRecord[id] = {};
+      if (!visitRecord[id]) {
+        visitRecord[id] = {};
       }
 
       let visitorId = '';
 
       if (req.session.user_id) { // visitor is a register user
 
-        if (!req.session.uniqueVisit[id].includes(req.session.user_id)) { // registered user hasn't visited before
-          req.session.uniqueVisit[id].push((req.session.user_id)); // add registered user to uniqueVisit[id]
-          req.session.visitRecord[id][new Date().toString()] = req.session.user_id;
+        if (!uniqueVisit[id].includes(`User: ${users[req.session.user_id].email}`)) { // registered user hasn't visited before
+          uniqueVisit[id].push(`User: ${users[req.session.user_id].email}`); // add registered user to uniqueVisit[id]
+          visitRecord[id][new Date().toString()] = `User: ${users[req.session.user_id].email}`;
         } else {
-          req.session.visitRecord[id][new Date().toString()] = req.session.user_id;
+          visitRecord[id][new Date().toString()] = `User: ${users[req.session.user_id].email}`;
         }
 
       } else { // visitor has not been registered
           visitorId = generateRandomString();
-          req.session.uniqueVisit[id].push(`Visitor: ${visitorId}`);
-          req.session.visitRecord[id][new Date().toString()] = visitorId;
+          uniqueVisit[id].push(`Visitor: ${visitorId}`);
+          visitRecord[id][new Date().toString()] = `Visitor: ${visitorId}`;
       }
 
 
